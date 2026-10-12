@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grand Azure Luxury Hotel & Suites | DBMS Management System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+  <!-- Sidebar Navigation -->
+  <aside class="sidebar">
+    <div class="brand-header">
+      <div class="brand-logo">
+        <i class="fas fa-hotel"></i>
+      </div>
+      <div class="brand-info">
+        <h1>Grand Azure</h1>
+        <p>DBMS Hotel Suite</p>
+      </div>
+    </div>
+
+    <ul class="nav-menu">
+      <li class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
+        <i class="fas fa-th-large"></i> Dashboard
+      </li>
+      <li class="nav-item" data-tab="rooms" onclick="switchTab('rooms')">
+        <i class="fas fa-door-open"></i> Rooms Inventory
+      </li>
+      <li class="nav-item" data-tab="reservations" onclick="switchTab('reservations')">
+        <i class="fas fa-calendar-check"></i> Reservations
+      </li>
+      <li class="nav-item" data-tab="guest-services" onclick="switchTab('guest-services')">
+        <i class="fas fa-concierge-bell"></i> Guest Services
+      </li>
+      <li class="nav-item" data-tab="billing" onclick="switchTab('billing')">
+        <i class="fas fa-file-invoice-dollar"></i> Billing & Invoices
+      </li>
+      <li class="nav-item" data-tab="staff" onclick="switchTab('staff')">
+        <i class="fas fa-id-badge"></i> Staff Directory
+      </li>
+      <li class="nav-item" data-tab="sql-lab" onclick="switchTab('sql-lab')">
+        <i class="fas fa-terminal"></i> SQL Query Studio
+      </li>
+    </ul>
+
+    <!-- Database Connection Status & Sync -->
+    <div class="db-status-badge">
+      <div>
+        <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px;">Database Engine</div>
+        <div id="db-status-pill" class="db-status-pill mysql">
+          <span class="pulse-dot"></span> Checking...
+        </div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="initMySqlFromUi()" title="Provision MySQL Schema and Seed Data">
+        <i class="fas fa-sync-alt"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <main class="main-wrapper">
+    <!-- Top Header -->
+    <header class="top-navbar">
+      <div class="page-title">
+        <h2 id="page-title-text">Executive Dashboard</h2>
+        <p id="page-subtitle-text">Real-time overview of hotel occupancy, guest stays, and financial metrics</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-outline" onclick="openNewGuestModal()">
+          <i class="fas fa-user-plus"></i> New Guest
+        </button>
+        <button class="btn btn-primary" onclick="openNewReservationModal()">
+          <i class="fas fa-plus"></i> New Reservation
+        </button>
+      </div>
+    </header>
+
+    <!-- 1. DASHBOARD VIEW -->
+    <section id="view-dashboard" class="tab-view">
+      <!-- KPI Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon emerald"><i class="fas fa-chart-pie"></i></div>
+          <div class="stat-info">
+            <p>Occupancy Rate</p>
+            <h3 id="stat-occupancy">0%</h3>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon blue"><i class="fas fa-user-check"></i></div>
+          <div class="stat-info">
+            <p>Active Stays</p>
+            <h3 id="stat-active-stays">0</h3>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon purple"><i class="fas fa-bell"></i></div>
+          <div class="stat-info">
+            <p>Pending Services</p>
+            <h3 id="stat-pending-services">0</h3>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon gold"><i class="fas fa-coins"></i></div>
+          <div class="stat-info">
+            <p>Total Revenue</p>
+            <h3 id="stat-total-revenue">$0.00</h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Room Occupancy Visual Matrix -->
+      <div class="card-panel">
+        <div class="panel-header">
+          <h3><i class="fas fa-th" style="color:var(--gold-accent)"></i> Live Room Occupancy Matrix</h3>
+          <span style="font-size:0.8rem; color:var(--text-secondary)">Click any room to view or update status</span>
+        </div>
+        <div id="dashboard-rooms-grid" class="rooms-grid">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. ROOMS VIEW -->
+    <section id="view-rooms" class="tab-view" style="display:none;">
+      <div class="card-panel">
+        <div class="panel-header">
+          <h3><i class="fas fa-door-open" style="color:var(--gold-accent)"></i> Complete Room Inventory</h3>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Room #</th>
+                <th>Floor</th>
+                <th>Suite Type</th>
+                <th>Base Rate</th>
+                <th>Capacity</th>
+                <th>Status</th>
+                <th>Current Guest</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="rooms-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. RESERVATIONS VIEW -->
+    <section id="view-reservations" class="tab-view" style="display:none;">
+      <div class="card-panel">
+        <div class="panel-header">
+          <h3><i class="fas fa-calendar-alt" style="color:var(--gold-accent)"></i> All Reservations & Stays</h3>
+          <button class="btn btn-primary btn-sm" onclick="openNewReservationModal()">
+            <i class="fas fa-plus"></i> Book Room
+          </button>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Booking #</th>
+                <th>Guest</th>
+                <th>Room & Type</th>
+                <th>Stay Period</th>
+                <th>Room Cost</th>
+                <th>Status</th>
+                <th>Operations</th>
+              </tr>
+            </thead>
+            <tbody id="reservations-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. GUEST SERVICES VIEW -->
+    <section id="view-guest-services" class="tab-view" style="display:none;">
+      <div class="card-panel" style="margin-bottom: 24px;">
+        <div class="panel-header">
+          <h3><i class="fas fa-concierge-bell" style="color:var(--gold-accent)"></i> Luxury Services & Dining Menu</h3>
+          <span style="font-size:0.8rem; color:var(--text-secondary)">Order directly to any checked-in guest room</span>
+        </div>
+        <div id="services-catalog-grid" class="services-catalog"></div>
+      </div>
+
+      <div class="card-panel">
+        <div class="panel-header">
+          <h3><i class="fas fa-tasks" style="color:var(--gold-accent)"></i> Active Guest Service Orders</h3>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order #</th>
+                <th>Room & Guest</th>
+                <th>Requested Item</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Assigned Staff</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="service-orders-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. BILLING & INVOICES VIEW -->
+    <section id="view-billing" class="tab-view" style="display:none;">
+      <div class="card-panel">
+        <div class="panel-header">
+          <h3><i class="fas fa-file-invoice-dollar" style="color:var(--gold-accent)"></i> Invoices & Settlements</h3>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Invoice #</th>
+                <th>Guest</th>
+                <th>Room Charges</th>
+                <th>Service Charges</th>
+                <th>Tax (12%)</th>
+                <th>Grand Total</th>
+                <th>Payment Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="billing-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. STAFF & DEPARTMENTS VIEW -->
+    <section id="view-staff" class="tab-view" style="display:none;">
+      <div class="card-panel">
+        <div class="panel-header">
+          <h3><i class="fas fa-users-cog" style="color:var(--gold-accent)"></i> Hotel Staff Directory</h3>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Staff ID</th>
+                <th>Employee Name</th>
+                <th>Department</th>
+                <th>Role</th>
+                <th>Contact</th>
+                <th>Salary</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="staff-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. SQL QUERY STUDIO / LAB VIVA VIEW -->
+    <section id="view-sql-lab" class="tab-view" style="display:none;">
+      <div class="card-panel">
+        <div class="panel-header">
+          <h3><i class="fas fa-database" style="color:var(--gold-accent)"></i> Live DBMS Query Studio</h3>
+          <span style="font-size:0.8rem; color:var(--text-secondary)">Execute raw SQL queries & views for academic evaluation and DBMS viva</span>
+        </div>
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+          <button class="btn btn-outline btn-sm" onclick="setSqlTemplate('active_stays')">Active Guest Stays (View)</button>
+          <button class="btn btn-outline btn-sm" onclick="setSqlTemplate('room_occupancy')">Room Occupancy (Group By)</button>
+          <button class="btn btn-outline btn-sm" onclick="setSqlTemplate('top_services')">Top Revenue Services (Multi-join)</button>
+          <button class="btn btn-outline btn-sm" onclick="setSqlTemplate('unpaid_bills')">Unpaid Invoices (View)</button>
+          <button class="btn btn-outline btn-sm" onclick="setSqlTemplate('audit_history')">Audit Logs (Triggers)</button>
+        </div>
+
+        <div class="sql-console">
+          <textarea id="sql-query-input" class="sql-editor" spellcheck="false">SELECT * FROM vw_active_guest_stays;</textarea>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
+            <div id="sql-query-status" style="font-size:0.85rem; color:var(--text-secondary);">Ready to execute query</div>
+            <button class="btn btn-primary btn-sm" onclick="executeCustomQuery()">
+              <i class="fas fa-play"></i> Run Query
+            </button>
+          </div>
+        </div>
+
+        <div id="sql-results-table" class="table-responsive" style="margin-top:20px;"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- =========================================================================
+       MODALS
+       ========================================================================= -->
+
+  <!-- Modal: Room Status Update -->
+  <div id="modal-room-status" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 id="room-status-title">Update Room Status</h3>
+        <button class="modal-close" onclick="closeModal('modal-room-status')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="room-status-id">
+        <div class="form-group">
+          <label>Status</label>
+          <select id="room-status-select" class="form-control">
+            <option value="AVAILABLE">AVAILABLE</option>
+            <option value="OCCUPIED">OCCUPIED</option>
+            <option value="BOOKED">BOOKED</option>
+            <option value="CLEANING">CLEANING</option>
+            <option value="MAINTENANCE">MAINTENANCE</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-room-status')">Cancel</button>
+        <button class="btn btn-primary" onclick="submitRoomStatusUpdate()">Save Status</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: New Reservation -->
+  <div id="modal-new-reservation" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3>Create New Reservation</h3>
+        <button class="modal-close" onclick="closeModal('modal-new-reservation')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Select Guest</label>
+          <select id="res-guest-select" class="form-control"></select>
+        </div>
+        <div class="form-group">
+          <label>Select Available Suite / Room</label>
+          <select id="res-room-select" class="form-control"></select>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>Check-In Date</label>
+            <input type="date" id="res-check-in" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Check-Out Date</label>
+            <input type="date" id="res-check-out" class="form-control">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Number of Guests</label>
+          <input type="number" id="res-num-guests" class="form-control" value="2" min="1" max="6">
+        </div>
+        <div class="form-group">
+          <label>Special Requests</label>
+          <textarea id="res-requests" class="form-control" rows="2" placeholder="e.g. High floor, airport pickup, anniversary"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-new-reservation')">Cancel</button>
+        <button class="btn btn-primary" onclick="submitNewReservation()">Confirm Reservation</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: New Guest -->
+  <div id="modal-new-guest" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3>Register New Guest</h3>
+        <button class="modal-close" onclick="closeModal('modal-new-guest')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>First Name</label>
+            <input type="text" id="guest-fn" class="form-control" required placeholder="Alexander">
+          </div>
+          <div class="form-group">
+            <label>Last Name</label>
+            <input type="text" id="guest-ln" class="form-control" required placeholder="Wright">
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="guest-email" class="form-control" required placeholder="alex@example.com">
+          </div>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" id="guest-phone" class="form-control" required placeholder="+1-555-0143">
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label>ID Proof Type</label>
+            <select id="guest-id-type" class="form-control">
+              <option value="PASSPORT">PASSPORT</option>
+              <option value="NATIONAL_ID">NATIONAL ID</option>
+              <option value="DRIVING_LICENSE">DRIVING LICENSE</option>
+              <option value="OTHER">OTHER</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>ID Proof Number</label>
+            <input type="text" id="guest-id-num" class="form-control" required placeholder="P9482014">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Residential Address</label>
+          <input type="text" id="guest-addr" class="form-control" placeholder="City, Country">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-new-guest')">Cancel</button>
+        <button class="btn btn-primary" onclick="submitNewGuest()">Save Guest</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Order Guest Service -->
+  <div id="modal-order-service" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3>Order Guest Service</h3>
+        <button class="modal-close" onclick="closeModal('modal-order-service')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="order-service-id">
+        <div style="margin-bottom:14px; background:rgba(255,255,255,0.03); padding:12px; border-radius:8px; display:flex; justify-content:space-between;">
+          <strong id="order-service-name">Service Name</strong>
+          <span id="order-service-price" style="color:var(--gold-accent); font-weight:700;">$0.00</span>
+        </div>
+        <div class="form-group">
+          <label>Deliver to Checked-In Room</label>
+          <select id="order-res-select" class="form-control"></select>
+        </div>
+        <div class="form-group">
+          <label>Quantity</label>
+          <input type="number" id="order-qty" class="form-control" value="1" min="1" max="10">
+        </div>
+        <div class="form-group">
+          <label>Special Instructions / Notes</label>
+          <textarea id="order-notes" class="form-control" rows="2" placeholder="e.g. Extra napkins, deliver at 7:00 PM"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-order-service')">Cancel</button>
+        <button class="btn btn-primary" onclick="submitServiceOrder()">Dispatch Order</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Check-Out & Bill Preview -->
+  <div id="modal-checkout" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3>Guest Check-Out & Billing</h3>
+        <button class="modal-close" onclick="closeModal('modal-checkout')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="checkout-res-id">
+        <h4 id="checkout-guest-name" style="margin-bottom: 12px; color: var(--gold-accent);">Guest Name</h4>
+        <div style="background: rgba(0,0,0,0.3); padding:14px; border-radius:8px; margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span>Room Charges:</span>
+            <strong id="checkout-room-cost">$0.00</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span>Guest Services / Dining:</span>
+            <strong id="checkout-service-cost">$0.00</strong>
+          </div>
+          <div class="form-group" style="margin: 10px 0;">
+            <label>Promotional Discount (%)</label>
+            <input type="number" id="checkout-discount-pct" class="form-control" value="0" min="0" max="50">
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px; color:#10b981;">
+            <span>Discount Applied:</span>
+            <strong id="checkout-discount-val">-$0.00</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px; color:var(--text-secondary);">
+            <span>Hospitality Tax & GST (12%):</span>
+            <strong id="checkout-tax-val">$0.00</strong>
+          </div>
+          <hr style="border:0; border-top:1px solid var(--border-color); margin:10px 0;">
+          <div style="display:flex; justify-content:space-between; font-size:1.15rem;">
+            <span>Grand Total Due:</span>
+            <strong id="checkout-grand-total" style="color:var(--gold-accent);">$0.00</strong>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-checkout')">Cancel</button>
+        <button class="btn btn-primary" onclick="submitCheckout()">Finalize Check-Out & Invoice</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: View & Print Invoice -->
+  <div id="modal-invoice-view" class="modal-overlay">
+    <div class="modal-container" style="max-width: 650px;">
+      <div class="modal-header">
+        <h3>Invoice Details <span id="inv-number" style="color:var(--gold-accent);"></span></h3>
+        <button class="modal-close" onclick="closeModal('modal-invoice-view')">&times;</button>
+      </div>
+      <div class="modal-body" id="printable-invoice">
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border-color); padding-bottom:12px; margin-bottom:12px;">
+          <div>
+            <h4 style="font-size:1.1rem; color:var(--gold-accent);">Grand Azure Luxury Hotel</h4>
+            <p style="font-size:0.8rem; color:var(--text-secondary);">100 Ocean Promenade • Luxury DBMS Suite</p>
+          </div>
+          <div style="text-align:right;">
+            <strong id="inv-guest">Guest Name</strong>
+            <p id="inv-email" style="font-size:0.8rem; color:var(--text-secondary);"></p>
+          </div>
+        </div>
+
+        <div style="font-size:0.85rem; margin-bottom:14px; color:var(--text-secondary);">
+          <div><strong style="color:#fff;">Room & Dates:</strong> <span id="inv-room"></span> | <span id="inv-dates"></span></div>
+        </div>
+
+        <h5 style="margin-bottom:8px; font-size:0.9rem; text-transform:uppercase; color:var(--text-secondary);">Room Stay & Services</h5>
+        <div style="display:flex; justify-content:space-between; font-size:0.85rem; padding:4px 0; border-bottom:1px dashed rgba(255,255,255,0.06);">
+          <span>Room Stay Total</span>
+          <strong id="inv-room-charge">$0.00</strong>
+        </div>
+        <div id="inv-services-list" style="margin: 8px 0;"></div>
+
+        <div style="background:rgba(0,0,0,0.3); padding:12px; border-radius:8px; margin-top:14px; font-size:0.9rem;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <span>Discount:</span><span id="inv-discount" style="color:#10b981;">-$0.00</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <span>Hospitality Tax (12%):</span><span id="inv-tax">$0.00</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-weight:700; font-size:1.05rem;">
+            <span>Grand Total:</span><span id="inv-grand-total" style="color:var(--gold-accent);">$0.00</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px; color:#10b981;">
+            <span>Paid so far:</span><span id="inv-paid">$0.00</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-weight:700; color:#ef4444;">
+            <span>Balance Due:</span><span id="inv-balance">$0.00</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="window.print()"><i class="fas fa-print"></i> Print Receipt</button>
+        <button class="btn btn-primary" onclick="closeModal('modal-invoice-view')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Record Payment -->
+  <div id="modal-payment" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3>Record Payment</h3>
+        <button class="modal-close" onclick="closeModal('modal-payment')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="pay-invoice-id">
+        <div class="form-group">
+          <label>Payment Amount ($)</label>
+          <input type="number" id="pay-amount" class="form-control" step="0.01" min="1">
+          <small id="pay-balance-hint" style="color:var(--text-secondary);"></small>
+        </div>
+        <div class="form-group">
+          <label>Payment Method</label>
+          <select id="pay-method" class="form-control">
+            <option value="CREDIT_CARD">CREDIT CARD</option>
+            <option value="DEBIT_CARD">DEBIT CARD</option>
+            <option value="CASH">CASH</option>
+            <option value="UPI">UPI / QR CODE</option>
+            <option value="ONLINE">ONLINE TRANSFER</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Notes / Reference</label>
+          <input type="text" id="pay-notes" class="form-control" placeholder="Transaction ID, Cash register #">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-payment')">Cancel</button>
+        <button class="btn btn-primary" onclick="submitPayment()">Submit Payment</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
